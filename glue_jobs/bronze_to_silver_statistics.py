@@ -9,7 +9,7 @@ Improvements over original pyspark_code.py:
   - Data quality checks with row-level flagging
   - Deduplication (same video appearing in multiple ingestions)
   - Date parsing and standardization
-  - Handles both Kaggle CSV format and live API JSON format
+  - Handles live API JSON format
   - Partitioned by region AND date for better query performance
   - Bookmarking for incremental processing
   - Proper logging
@@ -91,7 +91,7 @@ else:
     # ── Step 2: Schema Enforcement ──────────────────────────────────────────
     logger.info("Enforcing schema and casting types...")
 
-    # Handle both Kaggle CSV format and YouTube API JSON format
+    # Handle YouTube API JSON format
     columns = set(df.columns)
 
     if "snippet.title" in columns or "snippet__title" in columns:
@@ -127,30 +127,7 @@ else:
                 else F.col("snippet__description").alias("description"),
             F.col("region"),
         )
-    else:
-        # Kaggle CSV format — just cast types
-        logger.info("Detected Kaggle CSV format — casting types...")
-        df = df.select(
-            F.col("video_id").cast(StringType()),
-            F.col("trending_date").cast(StringType()),
-            F.col("title").cast(StringType()),
-            F.col("channel_title").cast(StringType()),
-            F.col("category_id").cast(LongType()),
-            F.col("publish_time").cast(StringType()),
-            F.col("tags").cast(StringType()),
-            F.col("views").cast(LongType()),
-            F.col("likes").cast(LongType()),
-            F.col("dislikes").cast(LongType()),
-            F.col("comment_count").cast(LongType()),
-            F.col("thumbnail_link").cast(StringType()),
-            F.col("comments_disabled").cast(BooleanType()),
-            F.col("ratings_disabled").cast(BooleanType()),
-            F.col("video_error_or_removed").cast(BooleanType()),
-            F.col("description").cast(StringType()),
-            F.col("region").cast(StringType()),
-        )
-
-
+      
     # ── Step 3: Data Cleansing ──────────────────────────────────────────────
     logger.info("Cleansing data...")
 
@@ -159,17 +136,6 @@ else:
 
     # Standardize region codes to lower
     df = df.withColumn("region", F.lower(F.trim(F.col("region"))))
-
-    # Parse trending_date from Kaggle format (YY.DD.MM) to proper date
-    df = df.withColumn(
-        "trending_date_parsed",
-        F.when(
-            F.col("trending_date").rlike(r"^\d{2}\.\d{2}\.\d{2}$"),
-            F.to_date(F.col("trending_date"), "yy.dd.MM")
-        ).otherwise(
-            F.to_date(F.col("trending_date"))
-        )
-    )
 
     # Fill nulls for numeric columns with 0
     numeric_cols = ["views", "likes", "dislikes", "comment_count"]
