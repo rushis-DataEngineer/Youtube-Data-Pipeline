@@ -29,7 +29,7 @@ A cloud-native ETL pipeline that ingests YouTube trending video data across 10 r
 
 ## Overview
 
-This pipeline automates the end-to-end process of collecting, cleaning, and analyzing YouTube trending video data. It replaces manual Kaggle dataset downloads with live YouTube Data API v3 integration and produces three sets of business analytics tables:
+This pipeline automates the end-to-end process of collecting, cleaning, and analyzing YouTube trending video data. It replaces live YouTube Data API v3 integration and produces three sets of business analytics tables:
 
 - **Trending Analytics** — daily trending metrics per region (total videos, views, engagement rates)
 - **Channel Analytics** — channel-level performance and ranking across regions
@@ -133,14 +133,12 @@ s3://bronze-bucket/youtube/raw_statistics/region=US/date=2026-04-01/hour=12/
 s3://bronze-bucket/youtube/raw_statistics_reference_data/region=US/
 ```
 
-Historical Kaggle CSV data can also be uploaded to the Bronze layer via the `aws_copy.sh` script.
-
 ### Silver Layer (Cleansed Data)
 
 Two parallel transformations run on Bronze data:
 
 **1. Statistics (Glue Job: `bronze_to_silver_statistics`)**
-- Schema enforcement across both API JSON and Kaggle CSV formats
+- Schema enforcement across API JSON format
 - Type casting (views, likes, dislikes → Long; dates parsed)
 - Null handling and region standardization
 - Deduplication (latest record per video/region/date)
@@ -346,13 +344,6 @@ aws stepfunctions create-state-machine \
   --name yt-data-pipeline \
   --definition file://step_functions/pipeline_orchestation.json \
   --role-arn <step-functions-role-arn>
-```
-
-### 5. (Optional) Upload historical Kaggle data
-
-```bash
-cd data
-bash ../scripts/aws_copy.sh
 ```
 
 ---
